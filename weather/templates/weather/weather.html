@@ -1,0 +1,59 @@
+{% extends "users/base.html" %}
+{% load static %}
+
+{% block content %}
+  <!-- search_weather -->
+  <form method="post">
+    {% csrf_token %}
+    <input type="text" id="city-input" name="city" placeholder="Введите город">
+    <ul id="suggestion-list"></ul>
+    <button type="submit">Поиск</button>
+  </form>
+
+  <!-- weather_result -->
+  <h1>Прогноз погоды для {{ weather_data.name }}</h1>
+  <ul>
+    <li>Температура: {{ weather_data.main.temp }} К</li>
+    <li>Ветер: {{ weather_data.wind.speed }} м/с</li>
+    <li>Влажность: {{ weather_data.main.humidity }}%</li>
+  </ul>
+
+  <!-- search_history -->
+  <h1>История поиска</h1>
+  <ul>
+    {% for search in search_history %}
+        <li>{{ search.city }}</li>
+    {% endfor %}
+  </ul>
+
+  <script>
+    const cityInput = document.getElementById('city-input');
+    const suggestionList = document.getElementById('suggestion-list');
+
+    cityInput.addEventListener('input', async () => {
+      const city = cityInput.value.trim();
+      if (city.length > 2) {
+        const response = await fetch('{% url "autocomplete" %}', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ city }),
+        });
+        const suggestions = await response.json();
+        suggestionList.innerHTML = '';
+        suggestions.forEach((suggestion) => {
+          const suggestionItem = document.createElement('li');
+          suggestionItem.textContent = suggestion;
+          suggestionList.appendChild(suggestionItem);
+        });
+      }
+    });
+
+    suggestionList.addEventListener('click', (event) => {
+      const suggestion = event.target.textContent;
+      cityInput.value = suggestion;
+      suggestionList.innerHTML = '';
+    });
+  </script>
+{% endblock content %}
